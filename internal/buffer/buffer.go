@@ -176,6 +176,15 @@ const (
 
 type DiffStatus byte
 
+type DiffGroup struct {
+	bufs []*Buffer
+}
+
+func NewDiffGroup() *DiffGroup {
+	g := new(DiffGroup)
+	return g
+}
+
 // Buffer stores the main information about a currently open file including
 // the actual text (in a LineArray), the undo/redo stack (in an EventHandler)
 // all the cursors, the syntax highlighting info, the settings for the buffer
@@ -187,6 +196,7 @@ type DiffStatus byte
 type Buffer struct {
 	*EventHandler
 	*SharedBuffer
+	*DiffGroup
 
 	fini        int32
 	cursors     []*Cursor
@@ -474,7 +484,7 @@ func (b *Buffer) GetName() string {
 	return name
 }
 
-//SetName changes the name for this buffer
+// SetName changes the name for this buffer
 func (b *Buffer) SetName(s string) {
 	b.name = s
 }
@@ -1209,6 +1219,19 @@ func (b *Buffer) DiffStatus(lineN int) DiffStatus {
 	defer b.diffLock.RUnlock()
 	// Note that the zero value for DiffStatus is equal to DSUnchanged
 	return b.diff[lineN]
+}
+
+// TODO: Allow more than one diff group
+func (b *Buffer) AddToDiffGroup() {
+	if b.DiffGroup == nil {
+		b.DiffGroup = NewDiffGroup()
+	}
+	for _, other_buf := range b.DiffGroup.bufs {
+		if b == other_buf {
+			return
+		}
+	}
+	b.DiffGroup.bufs = append(b.DiffGroup.bufs, b)
 }
 
 // SearchMatch returns true if the given location is within a match of the last search.

@@ -31,38 +31,39 @@ var commands map[string]Command
 
 func InitCommands() {
 	commands = map[string]Command{
-		"set":        {(*BufPane).SetCmd, OptionValueComplete},
-		"reset":      {(*BufPane).ResetCmd, OptionValueComplete},
-		"setlocal":   {(*BufPane).SetLocalCmd, OptionValueComplete},
-		"show":       {(*BufPane).ShowCmd, OptionComplete},
-		"showkey":    {(*BufPane).ShowKeyCmd, nil},
-		"run":        {(*BufPane).RunCmd, nil},
-		"bind":       {(*BufPane).BindCmd, nil},
-		"unbind":     {(*BufPane).UnbindCmd, nil},
-		"quit":       {(*BufPane).QuitCmd, nil},
-		"goto":       {(*BufPane).GotoCmd, nil},
-		"save":       {(*BufPane).SaveCmd, nil},
-		"replace":    {(*BufPane).ReplaceCmd, nil},
-		"replaceall": {(*BufPane).ReplaceAllCmd, nil},
-		"vsplit":     {(*BufPane).VSplitCmd, buffer.FileComplete},
-		"hsplit":     {(*BufPane).HSplitCmd, buffer.FileComplete},
-		"tab":        {(*BufPane).NewTabCmd, buffer.FileComplete},
-		"help":       {(*BufPane).HelpCmd, HelpComplete},
-		"eval":       {(*BufPane).EvalCmd, nil},
-		"log":        {(*BufPane).ToggleLogCmd, nil},
-		"plugin":     {(*BufPane).PluginCmd, PluginComplete},
-		"reload":     {(*BufPane).ReloadCmd, nil},
-		"reopen":     {(*BufPane).ReopenCmd, nil},
-		"cd":         {(*BufPane).CdCmd, buffer.FileComplete},
-		"pwd":        {(*BufPane).PwdCmd, nil},
-		"open":       {(*BufPane).OpenCmd, buffer.FileComplete},
-		"tabmove":    {(*BufPane).TabMoveCmd, nil},
-		"tabswitch":  {(*BufPane).TabSwitchCmd, nil},
-		"term":       {(*BufPane).TermCmd, nil},
-		"memusage":   {(*BufPane).MemUsageCmd, nil},
-		"retab":      {(*BufPane).RetabCmd, nil},
-		"raw":        {(*BufPane).RawCmd, nil},
-		"textfilter": {(*BufPane).TextFilterCmd, nil},
+		"set":              {(*BufPane).SetCmd, OptionValueComplete},
+		"reset":            {(*BufPane).ResetCmd, OptionValueComplete},
+		"setlocal":         {(*BufPane).SetLocalCmd, OptionValueComplete},
+		"show":             {(*BufPane).ShowCmd, OptionComplete},
+		"showkey":          {(*BufPane).ShowKeyCmd, nil},
+		"run":              {(*BufPane).RunCmd, nil},
+		"bind":             {(*BufPane).BindCmd, nil},
+		"unbind":           {(*BufPane).UnbindCmd, nil},
+		"quit":             {(*BufPane).QuitCmd, nil},
+		"goto":             {(*BufPane).GotoCmd, nil},
+		"save":             {(*BufPane).SaveCmd, nil},
+		"replace":          {(*BufPane).ReplaceCmd, nil},
+		"replaceall":       {(*BufPane).ReplaceAllCmd, nil},
+		"vsplit":           {(*BufPane).VSplitCmd, buffer.FileComplete},
+		"hsplit":           {(*BufPane).HSplitCmd, buffer.FileComplete},
+		"tab":              {(*BufPane).NewTabCmd, buffer.FileComplete},
+		"help":             {(*BufPane).HelpCmd, HelpComplete},
+		"eval":             {(*BufPane).EvalCmd, nil},
+		"log":              {(*BufPane).ToggleLogCmd, nil},
+		"plugin":           {(*BufPane).PluginCmd, PluginComplete},
+		"reload":           {(*BufPane).ReloadCmd, nil},
+		"reopen":           {(*BufPane).ReopenCmd, nil},
+		"cd":               {(*BufPane).CdCmd, buffer.FileComplete},
+		"pwd":              {(*BufPane).PwdCmd, nil},
+		"open":             {(*BufPane).OpenCmd, buffer.FileComplete},
+		"tabmove":          {(*BufPane).TabMoveCmd, nil},
+		"tabswitch":        {(*BufPane).TabSwitchCmd, nil},
+		"term":             {(*BufPane).TermCmd, nil},
+		"memusage":         {(*BufPane).MemUsageCmd, nil},
+		"retab":            {(*BufPane).RetabCmd, nil},
+		"raw":              {(*BufPane).RawCmd, nil},
+		"textfilter":       {(*BufPane).TextFilterCmd, nil},
+		"add_to_diffgroup": {(*BufPane).AddToDiffGroup, nil},
 	}
 }
 
@@ -154,6 +155,14 @@ func (h *BufPane) TextFilterCmd(args []string) {
 	}
 	h.Cursor.DeleteSelection()
 	h.Buf.Insert(h.Cursor.Loc, bout.String())
+}
+
+func (h *BufPane) AddToDiffGroup(args []string) {
+	if len(args) != 0 {
+		InfoBar.Error("usage: add_to_diffgroup")
+		return
+	}
+	h.Buf.AddToDiffGroup()
 }
 
 // TabMoveCmd moves the current tab to a given index (starts at 1). The
