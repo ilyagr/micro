@@ -101,7 +101,7 @@ type SharedBuffer struct {
 	diffBase          []byte
 	diffBaseLineCount int
 	diffLock          sync.RWMutex
-	diff              map[int]DiffStatus
+	lineDiffStatus    map[int]DiffStatus
 
 	requestedBackup bool
 
@@ -1120,7 +1120,7 @@ func (b *Buffer) updateDiffSync() {
 	b.diffLock.Lock()
 	defer b.diffLock.Unlock()
 
-	b.diff = make(map[int]DiffStatus)
+	b.lineDiffStatus = make(map[int]DiffStatus)
 
 	if b.diffBase == nil {
 		return
@@ -1129,27 +1129,28 @@ func (b *Buffer) updateDiffSync() {
 	differ := dmp.New()
 	baseRunes, bufferRunes, _ := differ.DiffLinesToRunes(string(b.diffBase), string(b.Bytes()))
 	diffs := differ.DiffMainRunes(baseRunes, bufferRunes, false)
-	lineN := 0
+
+	lineThisBuf := 0
 
 	for _, diff := range diffs {
 		lineCount := len([]rune(diff.Text))
 
 		switch diff.Type {
 		case dmp.DiffEqual:
-			lineN += lineCount
+			lineThisBuf += lineCount
 		case dmp.DiffInsert:
 			var status DiffStatus
-			if b.diff[lineN] == DSDeletedAbove {
+			if b.lineDiffStatus[lineThisBuf] == DSDeletedAbove {
 				status = DSModified
 			} else {
 				status = DSAdded
 			}
 			for i := 0; i < lineCount; i++ {
-				b.diff[lineN] = status
-				lineN++
+				b.lineDiffStatus[lineThisBuf] = status
+				lineThisBuf++
 			}
 		case dmp.DiffDelete:
-			b.diff[lineN] = DSDeletedAbove
+			b.lineDiffStatus[lineThisBuf] = DSDeletedAbove
 		}
 	}
 }
@@ -1184,7 +1185,7 @@ func (b *Buffer) UpdateDiff(callback func(bool)) {
 	} else {
 		// Don't compute diffs for very large files
 		b.diffLock.Lock()
-		b.diff = make(map[int]DiffStatus)
+		b.lineDiffStatus = make(map[int]DiffStatus)
 		b.diffLock.Unlock()
 		callback(true)
 	}
@@ -1208,22 +1209,22 @@ func (b *Buffer) DiffStatus(lineN int) DiffStatus {
 	b.diffLock.RLock()
 	defer b.diffLock.RUnlock()
 	// Note that the zero value for DiffStatus is equal to DSUnchanged
-	return b.diff[lineN]
+	return b.lineDiffStatus[lineN]
 }
 
 // FindNextDiffLine returns the line number of the next block of diffs.
 // If `startLine` is already in a block of diffs, lines in that block are skipped.
 func (b *Buffer) FindNextDiffLine(startLine int, forward bool) (int, error) {
-	if b.diff == nil {
+	if b.lineDiffStatus == nil {
 		return 0, errors.New("no diff data")
 	}
-	startStatus, ok := b.diff[startLine]
+	startStatus, ok := b.lineDiffStatus[startLine]
 	if !ok {
 		startStatus = DSUnchanged
 	}
 	curLine := startLine
 	for {
-		curStatus, ok := b.diff[curLine]
+		curStatus, ok := b.lineDiffStatus[curLine]
 		if !ok {
 			curStatus = DSUnchanged
 		}
