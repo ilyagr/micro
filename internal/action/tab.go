@@ -147,16 +147,40 @@ func (t *TabList) Display() {
 // Tabs is the global tab list
 var Tabs *TabList
 
-func InitTabs(bufs []*buffer.Buffer) {
+func InitTabs(bufs []*buffer.Buffer, diffPairs bool) {
 	multiopen := config.GetGlobalOption("multiopen").(string)
-	if multiopen == "tab" {
+	if diffPairs {
+		leftBufs := make([]*buffer.Buffer, 0, len(bufs)/2)
+		for i := 0; i < len(bufs); i += 2 {
+			leftBufs = append(leftBufs, bufs[i])
+		}
+		Tabs = NewTabList(leftBufs)
+		for i, t := range Tabs.List {
+			rightIx := i*2 + 1
+			if rightIx >= len(bufs) {
+				break
+			}
+			// TODO: There is a bug when trying to create a split in an inactive tab
+			Tabs.SetActive(i)
+			leftPane := t.CurPane()
+			var rightPane *BufPane
+			if multiopen == "hsplit" {
+				rightPane = MainTab().CurPane().HSplitBuf(bufs[rightIx])
+			} else { // default vsplit for diffs
+				rightPane = MainTab().CurPane().VSplitBuf(bufs[rightIx])
+			}
+			leftPane.SetDiffBase(rightPane)
+			rightPane.SetDiffBase(leftPane)
+		}
+		Tabs.SetActive(0)
+	} else if multiopen == "tab" {
 		Tabs = NewTabList(bufs)
 	} else {
 		Tabs = NewTabList(bufs[:1])
 		for _, b := range bufs[1:] {
 			if multiopen == "vsplit" {
 				MainTab().CurPane().VSplitBuf(b)
-			} else {  // default hsplit
+			} else { // default hsplit
 				MainTab().CurPane().HSplitBuf(b)
 			}
 		}

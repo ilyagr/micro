@@ -241,6 +241,8 @@ type BufPane struct {
 	// since we may not know the window geometry yet. In such case we finish
 	// its initialization a bit later, after the initial resize.
 	initialized bool
+
+	diffBase *BufPane
 }
 
 func newBufPane(buf *buffer.Buffer, win display.BWindow, tab *Tab) *BufPane {
@@ -270,6 +272,12 @@ func NewBufPaneFromBuf(buf *buffer.Buffer, tab *Tab) *BufPane {
 	// Postpone finishing initializing the pane until we know the actual geometry
 	// of the buf window.
 	return h
+}
+
+// TODO: docs
+func (h *BufPane) SetDiffBase(other *BufPane) {
+	h.diffBase = other
+	h.Buf.SetDiffBase(other.Buf.Bytes())
 }
 
 // TODO: make sure splitID and tab are set before finishInitialize is called
@@ -615,6 +623,7 @@ func (h *BufPane) DoRuneInsert(r rune) {
 // VSplitIndex opens the given buffer in a vertical split on the given side.
 func (h *BufPane) VSplitIndex(buf *buffer.Buffer, right bool) *BufPane {
 	e := NewBufPaneFromBuf(buf, h.tab)
+	// TODO: Bug if current tab is not h's tab.
 	e.splitID = MainTab().GetNode(h.splitID).VSplit(right)
 	MainTab().Panes = append(MainTab().Panes, e)
 	MainTab().Resize()

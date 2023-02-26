@@ -42,6 +42,7 @@ var (
 	flagProfile   = flag.Bool("profile", false, "Enable CPU profiling (writes profile info to ./micro.prof)")
 	flagPlugin    = flag.String("plugin", "", "Plugin command")
 	flagClean     = flag.Bool("clean", false, "Clean configuration directory")
+	flagDiff      = flag.Bool("diff", false, "Diff mode TODO: document")
 	optionFlags   map[string]*string
 
 	sigterm chan os.Signal
@@ -58,6 +59,9 @@ func InitFlags() {
 		fmt.Println("[FILE]:LINE:COL (if the `parsecursor` option is enabled)")
 		fmt.Println("+LINE:COL")
 		fmt.Println("    \tSpecify a line and column to start the cursor at when opening a buffer")
+		// TODO: document
+		fmt.Println("-diff")
+		fmt.Println("    \tTODO: document")
 		fmt.Println("-options")
 		fmt.Println("    \tShow all option help")
 		fmt.Println("-debug")
@@ -199,12 +203,21 @@ func LoadInput(args []string) []*buffer.Buffer {
 	if len(files) > 0 {
 		// Option 1
 		// We go through each file and load it
+		if *flagDiff && len(files)%2 != 0 {
+			screen.TermMessage("Given an odd number of files to edit with --diff.") // TODO: report number
+			os.Exit(1)                                                              // TODO: Will this print anything? How do we exit on error?
+		}
 		for i := 0; i < len(files); i++ {
 			buf, err := buffer.NewBufferFromFileAtLoc(files[i], btype, flagStartPos)
 			if err != nil {
 				screen.TermMessage(err)
+				if *flagDiff {
+					os.Exit(1) // TODO: Will this print anything? How do we exit on error?
+				}
 				continue
 			}
+
+			// Check diff.
 			// If the file didn't exist, input will be empty, and we'll open an empty buffer
 			buffers = append(buffers, buf)
 		}
@@ -336,7 +349,7 @@ func main() {
 		runtime.Goexit()
 	}
 
-	action.InitTabs(b)
+	action.InitTabs(b, *flagDiff)
 
 	err = config.RunPluginFn("init")
 	if err != nil {
