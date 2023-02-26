@@ -1267,6 +1267,16 @@ func (b *Buffer) FindNextDiffLine(startLine int, forward bool) (int, error) {
 	}
 }
 
+func (b *Buffer) DiffbaseLineFor(ourLine int) (int, error) {
+	if b.lineDiffMatching == nil {
+		return 0, errors.New("no diff data")
+	}
+	if bl, ok := b.lineDiffMatching[ourLine]; ok {
+		return bl, nil
+	}
+	return 0, errors.New("line not found")
+}
+
 // SearchMatch returns true if the given location is within a match of the last search.
 // It is used for search highlighting
 func (b *Buffer) SearchMatch(pos Loc) bool {

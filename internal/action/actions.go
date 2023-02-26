@@ -1027,6 +1027,17 @@ func (h *BufPane) FindPrevious() bool {
 	return true
 }
 
+func (h *BufPane) gotoDiffLineAndUpdatePairedPane(l int) {
+	h.GotoLoc(buffer.Loc{0, l})
+	if h.diffBase != nil {
+		if bl, err := h.Buf.DiffbaseLineFor(l); err == nil {
+			h.diffBase.GotoLoc(buffer.Loc{0, bl})
+			// TODO: Scroll the other buffer if possible to match the cursor line
+			// What do we do if this is not possible? Draw cursorline even in inactive windows?
+		}
+	}
+}
+
 // DiffNext searches forward until the beginning of the next block of diffs
 func (h *BufPane) DiffNext() bool {
 	cur := h.Cursor.Loc.Y
@@ -1034,7 +1045,7 @@ func (h *BufPane) DiffNext() bool {
 	if err != nil {
 		return false
 	}
-	h.GotoLoc(buffer.Loc{0, dl})
+	h.gotoDiffLineAndUpdatePairedPane(dl)
 	return true
 }
 
@@ -1045,7 +1056,7 @@ func (h *BufPane) DiffPrevious() bool {
 	if err != nil {
 		return false
 	}
-	h.GotoLoc(buffer.Loc{0, dl})
+	h.gotoDiffLineAndUpdatePairedPane(dl)
 	return true
 }
 
