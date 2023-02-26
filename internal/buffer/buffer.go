@@ -102,6 +102,7 @@ type SharedBuffer struct {
 	diffBaseLineCount int
 	diffLock          sync.RWMutex
 	lineDiffStatus    map[int]DiffStatus
+	lineDiffMatching  map[int]int
 
 	requestedBackup bool
 
@@ -1121,36 +1122,55 @@ func (b *Buffer) updateDiffSync() {
 	defer b.diffLock.Unlock()
 
 	b.lineDiffStatus = make(map[int]DiffStatus)
+	b.lineDiffMatching = make(map[int]int)
 
 	if b.diffBase == nil {
 		return
 	}
 
 	differ := dmp.New()
+	// Both `baseRunes` and `bufferRunes` have one character per line of original text
 	baseRunes, bufferRunes, _ := differ.DiffLinesToRunes(string(b.diffBase), string(b.Bytes()))
 	diffs := differ.DiffMainRunes(baseRunes, bufferRunes, false)
 
 	lineThisBuf := 0
+	lineDiffBase := 0
+
+	numDeletedLinesThatCouldBeModified := 0
 
 	for _, diff := range diffs {
 		lineCount := len([]rune(diff.Text))
 
 		switch diff.Type {
 		case dmp.DiffEqual:
-			lineThisBuf += lineCount
-		case dmp.DiffInsert:
-			var status DiffStatus
-			if b.lineDiffStatus[lineThisBuf] == DSDeletedAbove {
-				status = DSModified
-			} else {
-				status = DSAdded
-			}
 			for i := 0; i < lineCount; i++ {
-				b.lineDiffStatus[lineThisBuf] = status
+				b.lineDiffMatching[lineThisBuf] = lineDiffBase
 				lineThisBuf++
+				lineDiffBase++
 			}
+			numDeletedLinesThatCouldBeModified = 0
+		case dmp.DiffInsert:
+			if b.lineDiffStatus[lineThisBuf] == DSDeletedAbove {
+				matchingDiffLine := lineDiffBase - numDeletedLinesThatCouldBeModified
+				for i := 0; i < lineCount; i++ {
+					b.lineDiffStatus[lineThisBuf] = DSModified
+					b.lineDiffMatching[lineThisBuf] = util.Min(matchingDiffLine, lineDiffBase)
+					lineThisBuf++
+					matchingDiffLine++
+				}
+			} else {
+				for i := 0; i < lineCount; i++ {
+					b.lineDiffStatus[lineThisBuf] = DSAdded
+					b.lineDiffMatching[lineThisBuf] = lineDiffBase
+					lineThisBuf++
+				}
+			}
+			numDeletedLinesThatCouldBeModified = 0
 		case dmp.DiffDelete:
 			b.lineDiffStatus[lineThisBuf] = DSDeletedAbove
+			b.lineDiffMatching[lineThisBuf] = lineDiffBase
+			lineDiffBase += lineCount
+			numDeletedLinesThatCouldBeModified += lineCount
 		}
 	}
 }
