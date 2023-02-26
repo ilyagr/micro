@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -1173,6 +1174,7 @@ func (b *Buffer) updateDiffSync() {
 			numDeletedLinesThatCouldBeModified += lineCount
 		}
 	}
+	log.Print(b.GetName(), b.lineDiffMatching)
 }
 
 // UpdateDiff computes the diff between the diff base and the buffer content.
@@ -1245,6 +1247,7 @@ func (b *Buffer) FindNextDiffLine(startLine int, forward bool) (int, error) {
 	curLine := startLine
 	for {
 		curStatus, ok := b.lineDiffStatus[curLine]
+		log.Print(curLine, curStatus, ok)
 		if !ok {
 			curStatus = DSUnchanged
 		}

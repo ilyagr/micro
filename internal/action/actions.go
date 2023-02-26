@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"regexp"
 	"runtime"
@@ -1054,6 +1055,7 @@ func (h *BufPane) DiffPrevious() bool {
 	cur := h.Cursor.Loc.Y
 	dl, err := h.Buf.FindNextDiffLine(cur, false)
 	if err != nil {
+		log.Print(err)
 		return false
 	}
 	h.gotoDiffLineAndUpdatePairedPane(dl)
