@@ -455,7 +455,7 @@ func (w *BufWindow) displayBuffer() {
 
 		currentLine := false
 		for _, c := range cursors {
-			if bloc.Y == c.Y && w.active {
+			if bloc.Y == c.Y {
 				currentLine = true
 				break
 			}
@@ -517,7 +517,7 @@ func (w *BufWindow) displayBuffer() {
 							}
 						}
 
-						if b.Settings["cursorline"].(bool) && w.active && !dontOverrideBackground &&
+						if b.Settings["cursorline"].(bool) && !dontOverrideBackground &&
 							!c.HasSelection() && c.Y == bloc.Y {
 							if s, ok := config.Colorscheme["cursor-line"]; ok {
 								fg, _, _ := s.Decompose()
@@ -693,6 +693,7 @@ func (w *BufWindow) displayBuffer() {
 
 		style := config.DefStyle
 		for _, c := range cursors {
+			// TODO: What to do here when window is inactive??
 			if b.Settings["cursorline"].(bool) && w.active &&
 				!c.HasSelection() && c.Y == bloc.Y {
 				if s, ok := config.Colorscheme["cursor-line"]; ok {
