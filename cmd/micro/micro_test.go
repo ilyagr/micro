@@ -90,6 +90,7 @@ func startup(args []string) (tcell.SimulationScreen, error) {
 		return nil, err
 	}
 
+	s.SetSize(30, 10)
 	s.InjectResize()
 	handleEvent()
 
@@ -143,10 +144,14 @@ func injectString(str string) {
 	}
 }
 
-func openFile(file string) {
+func executePromptCommand(command string) {
 	injectKey(tcell.KeyCtrlE, rune(tcell.KeyCtrlE), tcell.ModCtrl)
-	injectString(fmt.Sprintf("open %s", file))
+	injectString(command)
 	injectKey(tcell.KeyEnter, rune(tcell.KeyEnter), tcell.ModNone)
+}
+
+func openFile(file string) {
+	executePromptCommand(fmt.Sprintf("open %s", file))
 }
 
 func createTestFile(name string, content string) (string, error) {
@@ -224,6 +229,20 @@ func TestSimpleEdit(t *testing.T) {
 	assert.Equal(t, "firstfoobar\nbase content\n", string(data))
 }
 
+func printSimScreenContents() {
+	result, w, _ := sim.GetContents()
+	for i, c := range result {
+		// fg, bg, _ := c.Style.Decompose()
+		// tcell.FindColor()
+		// TODO: cursor
+		fmt.Print(string(c.Runes))
+		if (i+1)%w == 0 {
+			fmt.Println()
+		}
+
+	}
+}
+
 func TestMouse(t *testing.T) {
 	file, err := createTestFile("micro_mouse_test", "base content")
 	if err != nil {
@@ -232,6 +251,9 @@ func TestMouse(t *testing.T) {
 	}
 	defer os.Remove(file)
 
+	// Mess up everything after :( Where does it store the config?
+	executePromptCommand("set diffgutter on")
+	executePromptCommand("set diff on")
 	openFile(file)
 
 	// buffer:
@@ -256,6 +278,7 @@ func TestMouse(t *testing.T) {
 	// base content
 	injectKey(tcell.KeyUp, 0, tcell.ModNone)
 	injectString("firstline")
+	printSimScreenContents()
 	// buffer:
 	// firstline
 	// secondline
@@ -317,6 +340,7 @@ func TestSearchAndReplace(t *testing.T) {
 	injectString("ynyny")
 	injectKey(tcell.KeyEscape, 0, tcell.ModNone)
 
+	printSimScreenContents()
 	injectKey(tcell.KeyCtrlS, rune(tcell.KeyCtrlS), tcell.ModCtrl)
 
 	data, err = ioutil.ReadFile(file)
